@@ -1,0 +1,32 @@
+name: Check Fork Status
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"   # Weekly at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check-fork:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/UrloMythus/UnHided.git
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Compare fork with upstream
+        run: |
+          BRANCH=${{ github.event.repository.default_branch }}  # or hardcode: main
+          BEHIND=$(git rev-list --count HEAD..upstream/$BRANCH)
+          if [ "$BEHIND" -gt 0 ]; then
+            echo "❌ Your fork is $BEHIND commits behind upstream/$BRANCH."
+            exit 1
+          else
+            echo "✅ Your fork is up to date with upstream/$BRANCH."
+          fi
